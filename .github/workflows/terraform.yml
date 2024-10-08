@@ -1,0 +1,34 @@
+name: Terraform Format and Validate
+
+# Trigger the workflow on pull requests to the main branch
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Terraform CLI
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.3.0
+
+      # Step 3: Initialize Terraform
+      - name: Terraform Init
+        run: terraform init
+
+      # Step 4: Run Terraform Format Check
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      # Step 5: Run Terraform Validate
+      - name: Terraform Validate
+        run: terraform validate
