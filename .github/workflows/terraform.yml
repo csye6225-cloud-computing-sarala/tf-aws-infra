@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
-  terraform:
+  terraform-format-validate:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,14 +21,32 @@ jobs:
         with:
           terraform_version: 1.3.0
 
-      # Step 3: Initialize Terraform
+      # Step 3: Cache Terraform Providers
+      - name: Cache Terraform Providers
+        uses: actions/cache@v3
+        with:
+          path: ~/.terraform.d/plugins
+          key: ${{ runner.os }}-terraform-${{ hashFiles('**/*.tf') }}
+          restore-keys: |
+            ${{ runner.os }}-terraform-
+
+      # Step 4: Initialize Terraform
       - name: Terraform Init
         run: terraform init
 
-      # Step 4: Run Terraform Format Check
+      # Step 5: Run Terraform Format Check
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
 
-      # Step 5: Run Terraform Validate
+      # Step 6: Run Terraform Validate
       - name: Terraform Validate
         run: terraform validate
+
+      # Step 7: Output validation results
+      - name: Show Terraform version
+        run: terraform version
+
+      # Ensure any failure in formatting or validation stops the workflow
+      - name: Fail the workflow on error
+        run: exit 1
+        if: failure()
