@@ -1,3 +1,7 @@
+variable "vpc_name" {
+  description = "Name of the VPC"
+  type        = string
+}
 variable "aws_profile" {
   description = "AWS CLI Profile to use"
   type        = string
