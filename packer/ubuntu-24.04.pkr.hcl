@@ -23,6 +23,11 @@ variable "aws_instance_type" {
   type        = string
 }
 
+variable "aws_source_ami" {
+  description = "Source AMI to use for building the custom image"
+  type        = string
+}
+
 variable "aws_ami_name" {
   description = "Name of the AMI to create"
   type        = string
@@ -60,7 +65,7 @@ source "amazon-ebs" "ubuntu" {
       virtualization-type = "hvm"
     }
     most_recent = true
-    owners      = ["099720109477"]  # Canonical ID for Ubuntu
+    owners      = ["099720109477"] # Canonical ID for Ubuntu
   }
 
   ssh_username = "ubuntu"
@@ -71,7 +76,7 @@ source "amazon-ebs" "ubuntu" {
     delete_on_termination = true
     volume_type           = "gp2"
   }
-  }
+}
 
 build {
   sources = [
