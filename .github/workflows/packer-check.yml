@@ -22,13 +22,18 @@ jobs:
           wget https://releases.hashicorp.com/packer/1.8.4/packer_1.8.4_linux_amd64.zip
           unzip -o packer_1.8.4_linux_amd64.zip -d /usr/local/bin/
 
-      # Step 3: Run packer fmt --check to ensure no formatting issues
+      # Step 3: Run packer init to install required plugins
+      - name: Initialize Packer
+        run: |
+          packer init ./packer/ubuntu-24.04.pkr.hcl
+
+      # Step 4: Run packer fmt --check to ensure no formatting issues
       - name: Check Packer formatting
         run: |
-          packer fmt -check -diff .
+          packer fmt -check -diff ./packer
         # If the packer fmt command makes changes, the workflow will fail.
 
-      # Step 4: Run packer validate to validate the template
+      # Step 5: Run packer validate to validate the template
       - name: Validate Packer template
         run: |
           packer validate ./packer/ubuntu-24.04.pkr.hcl
