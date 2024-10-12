@@ -1,0 +1,34 @@
+name: Packer Template Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  packer-check:
+    name: Packer Format and Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Manually install Packer
+      - name: Install Packer
+        run: |
+          sudo apt-get update && sudo apt-get install -y wget unzip
+          wget https://releases.hashicorp.com/packer/1.8.4/packer_1.8.4_linux_amd64.zip
+          unzip packer_1.8.4_linux_amd64.zip
+          sudo mv packer /usr/local/bin/
+
+      # Step 3: Run packer fmt --check to ensure no formatting issues
+      - name: Check Packer formatting
+        run: |
+          packer fmt -check -diff .
+
+      # Step 4: Run packer validate to validate the template
+      - name: Validate Packer template
+        run: |
+          packer validate ./ubuntu-24.04.pkr.hcl
