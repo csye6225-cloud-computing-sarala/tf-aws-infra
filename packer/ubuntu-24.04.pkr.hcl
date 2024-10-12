@@ -23,6 +23,11 @@ variable "aws_instance_type" {
   type        = string
 }
 
+variable "aws_source_ami" {
+  description = "Source AMI to use for building the custom image"
+  type        = string
+}
+
 variable "aws_ami_name" {
   description = "Name of the AMI to create"
   type        = string
