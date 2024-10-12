@@ -31,4 +31,4 @@ jobs:
       # Step 4: Run packer validate to validate the template
       - name: Validate Packer template
         run: |
-          packer validate ./ubuntu-24.04.pkr.hcl
+          packer validate ./packer/ubuntu-24.04.pkr.hcl
