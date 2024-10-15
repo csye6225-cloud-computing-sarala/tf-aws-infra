@@ -31,8 +31,8 @@ jobs:
             ${{ runner.os }}-terraform-
 
       # Step 4: Initialize Terraform
-      # - name: Terraform Init
-      #   run: terraform init
+      - name: Terraform Init
+        run: terraform init
 
       # Step 5: Run Terraform Format Check
       - name: Terraform Format Check
