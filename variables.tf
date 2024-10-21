@@ -38,11 +38,6 @@ variable "root_volume_type" {
   type        = string
 }
 
-variable "aws_subnet_id" {
-  description = "Subnet ID within the VPC where the build instance will run"
-  type        = string
-}
-
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
@@ -62,3 +57,20 @@ variable "key_name" {
   description = "SSH key name for EC2 instance access"
   type        = string
 }
+
+variable "db_name" {
+  description = "The database name"
+  type        = string
+}
+
+variable "db_username" {
+  description = "The database username"
+  type        = string
+}
+
+variable "db_password" {
+  description = "The database password"
+  type        = string
+  sensitive   = true
+}
+
