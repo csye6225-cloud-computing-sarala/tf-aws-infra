@@ -33,11 +33,6 @@ variable "availability_zones" {
   type        = list(string)
 }
 
-variable "root_volume_type" {
-  description = "Root volume type (e.g., gp2 for General Purpose SSD)"
-  type        = string
-}
-
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
@@ -74,3 +69,38 @@ variable "db_password" {
   sensitive   = true
 }
 
+variable "db_allocated_storage" {
+  description = "The allocated storage size in GB for the RDS instance"
+  type        = number
+  # default     = 20
+}
+
+variable "db_storage_type" {
+  description = "The type of storage for the RDS instance (e.g., gp2)"
+  type        = string
+  # default     = "gp2"
+}
+
+variable "db_engine" {
+  description = "The database engine (e.g., postgres)"
+  type        = string
+  # default     = "postgres"
+}
+
+variable "db_engine_version" {
+  description = "The version of the database engine (e.g., 13.16 for PostgreSQL)"
+  type        = string
+  # default     = "13.16"
+}
+
+variable "db_instance_class" {
+  description = "The instance class for the RDS instance (e.g., db.t3.micro)"
+  type        = string
+  # default     = "db.t3.micro"
+}
+
+variable "db_parameter_group_family" {
+  description = "The parameter group family (e.g., postgres13 for PostgreSQL version 13.x)"
+  type        = string
+  # default     = "postgres13"
+}

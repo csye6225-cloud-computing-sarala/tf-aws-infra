@@ -7,32 +7,39 @@ resource "aws_instance" "app_instance" {
   associate_public_ip_address = true
   key_name                    = var.key_name
 
-  # User Data Script to configure the web application with database info
   user_data = <<-EOF
-    #!/bin/bash
-    # Install updates and dependencies
-    sudo apt-get update
-    sudo apt-get install -y postgresql-client curl
+  #!/bin/bash
+  # Install updates and dependencies
+  sudo apt-get update
+  sudo apt-get install -y postgresql-client curl
 
-    # Database connection details
-    DB_HOST="${aws_db_instance.postgres_instance.address}"
-    DB_USER="${var.db_username}"
-    DB_PASSWORD="${var.db_password}"
-    DB_NAME="${var.db_name}"
+  # Database connection details
+  DB_HOST="${aws_db_instance.postgres_instance.address}"
+  DB_USER="${var.db_username}"
+  DB_PASSWORD="${var.db_password}"
+  DB_NAME="${var.db_name}"
 
-    # Store environment variables
-    echo "DB_HOST=$DB_HOST" >> /etc/environment
-    echo "DB_USER=$DB_USER" >> /etc/environment
-    echo "DB_PASSWORD=$DB_PASSWORD" >> /etc/environment
-    echo "DB_NAME=$DB_NAME" >> /etc/environment
+  # Store environment variables globally
+  echo "DB_HOST=$DB_HOST" | sudo tee -a /etc/environment
+  echo "DB_USER=$DB_USER" | sudo tee -a /etc/environment
+  echo "DB_PASSWORD=$DB_PASSWORD" | sudo tee -a /etc/environment
+  echo "DB_NAME=$DB_NAME" | sudo tee -a /etc/environment
 
-    # Example: Passing the database info to the application
-    echo "DATABASE_URL=postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:5432/$DB_NAME" >> /var/www/app/.env
+  # Update the .env file for the application
+  sudo tee /opt/csye6225/monil_shah_002824667_04/.env <<EOL
+  PROD_DB_USER=$DB_USER
+  PROD_DB_HOST=$DB_HOST
+  PROD_DB_NAME=$DB_NAME
+  PROD_DB_PASSWORD=$DB_PASSWORD
+  PROD_DB_PORT=5432
+  PROD_PORT=8080
+  DB_DIALECT=postgres
+  PORT=8080
+  EOL
 
-    # Start the application (assuming you have a start script)
-    cd /var/www/webapp
-    npm install
-    npm run start
+  # Restart the application service
+  sudo systemctl restart csye6225.service
+
   EOF
 
   root_block_device {
