@@ -53,6 +53,10 @@ variable "key_name" {
   type        = string
 }
 
+variable "environment" {
+  description = "Environment for the instance, either 'dev' or 'demo'"
+  type        = string
+}
 variable "db_name" {
   description = "The database name"
   type        = string
@@ -104,3 +108,9 @@ variable "db_parameter_group_family" {
   type        = string
   # default     = "postgres13"
 }
+
+variable "domain_name" {
+  description = "domain name"
+  type        = string
+}
+
