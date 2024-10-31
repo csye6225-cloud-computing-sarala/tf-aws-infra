@@ -48,20 +48,23 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop
 sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 \
   -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
 
-# Restart the application service and ensure it's running
 sleep 5
-nohup sudo systemctl restart csye6225.service &
 
 # Restart CloudWatch Agent with a delay to ensure it's fully stopped
 sleep 5
 nohup sudo systemctl restart amazon-cloudwatch-agent &
 
+# Restart the application service and ensure it's running
+sleep 5
+nohup sudo systemctl restart csye6225.service &
+
 
 # Verify status of services after restart
 sudo systemctl status amazon-cloudwatch-agent
 sudo systemctl status csye6225.service
-sudo systemctl restart csye6225.service
 sudo systemctl restart amazon-cloudwatch-agent
+sudo systemctl restart csye6225.service
+
 EOF
 
   root_block_device {
