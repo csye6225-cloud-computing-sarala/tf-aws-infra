@@ -18,9 +18,7 @@ resource "aws_iam_role" "ec2_role" {
 
 # IAM Policy for CloudWatch Agent
 data "aws_iam_policy" "agent_policy" {
-
   arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-
 }
 
 
