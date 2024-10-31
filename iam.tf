@@ -17,41 +17,32 @@ resource "aws_iam_role" "ec2_role" {
 }
 
 # IAM Policy for CloudWatch Agent
-data "aws_iam_policy" "agent_policy" {
-
-  arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-
-}
-
-
-# resource "aws_iam_policy" "cloudwatch_agent_policy" {
-#   name        = "CloudWatchAgentServerPolicyInline"
-#   path        = "/"
-#   description = "Policy for CloudWatch Agent to access CloudWatch logs and metrics"
-
-#   policy = jsonencode({
-#     Version = "2012-10-17",
-#     Statement = [
-#       {
-#         Effect = "Allow",
-#         Action = [
-#           "cloudwatch:PutMetricData",
-#           "ec2:DescribeTags",
-#           "logs:CreateLogGroup",
-#           "logs:CreateLogStream",
-#           "logs:PutLogEvents",
-#           "ssm:GetParameter"
-#         ],
-#         Resource = "*"
-#       }
-#     ]
-#   })
+# data "aws_iam_policy" "agent_policy" {
+#   arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 # }
 
+resource "aws_iam_policy" "custom_cloudwatch_policy" {
+  name        = "CustomCloudWatchPolicy"
+  description = "Allows EC2 to push custom metrics to CloudWatch"
+
+  policy = jsonencode({
+    Version : "2012-10-17",
+    Statement : [
+      {
+        Effect : "Allow",
+        Action : [
+          "cloudwatch:PutMetricData"
+        ],
+        Resource : "*"
+      }
+    ]
+  })
+}
+
 # Attach the policy to the EC2 IAM role
-resource "aws_iam_role_policy_attachment" "agent_policy_attachment" {
+resource "aws_iam_role_policy_attachment" "custom_cloudwatch_policy_attachment" {
   role       = aws_iam_role.ec2_role.name
-  policy_arn = data.aws_iam_policy.agent_policy.arn
+  policy_arn = aws_iam_policy.custom_cloudwatch_policy.arn
 }
 
 # Policy document for S3 access

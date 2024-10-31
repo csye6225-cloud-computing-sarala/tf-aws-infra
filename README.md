@@ -121,8 +121,22 @@ For demo environment:
 terraform destroy -var-file="demo.tfvars"
 ````
 
-*Test Runs*
-Test Run #1
-Test Run #2
-Test Run #3
-Test Run #4
+To check A records for dev account:
+````bash
+dig A dev.saralacsye6225.me
+````
+
+To check A records for demo account:
+````bash
+dig A demo.saralacsye6225.me
+````
+
+To Check for DKIM Record for Dev Account
+````bash
+dig TXT pic._domainkey.dev.saralacsye6225.me
+````
+
+To Check for DKIM Record for Demo Account
+````bash
+dig TXT mx._domainkey.demo.saralacsye6225.me
+````
