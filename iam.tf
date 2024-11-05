@@ -31,6 +31,24 @@ resource "aws_iam_policy" "custom_cloudwatch_policy" {
       {
         Effect : "Allow",
         Action : [
+          "ssm:DescribeAssociation",
+          "ssm:GetAutomationExecution",
+          "ssm:GetDocument",
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+          "ssm:ListAssociations",
+          "ssm:ListInstanceAssociations",
+          "ssm:PutComplianceItems",
+          "ssm:PutConfigurePackageResult",
+          "ssm:UpdateAssociationStatus",
+          "ssm:UpdateInstanceAssociationStatus",
+          "ssmmessages:*",
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
+          "logs:PutLogEvents",
+          "ec2:DescribeTags",
           "cloudwatch:PutMetricData"
         ],
         Resource : "*"
