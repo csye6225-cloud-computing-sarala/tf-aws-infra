@@ -32,11 +32,6 @@ output "rds_instance_id" {
   value       = aws_db_instance.postgres_instance.id
 }
 
-# output "app_instance_public_ip" {
-#   description = "Public IP of the App EC2 Instance in the specified environment"
-#   value       = aws_launch_template.app_instance.public_ip
-# }
-
 output "app_instance_environment" {
   description = "Current environment of the App Instance (dev or demo)"
   value       = var.environment

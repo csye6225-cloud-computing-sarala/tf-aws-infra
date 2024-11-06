@@ -16,11 +16,6 @@ resource "aws_iam_role" "ec2_role" {
   }
 }
 
-# IAM Policy for CloudWatch Agent
-# data "aws_iam_policy" "agent_policy" {
-#   arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-# }
-
 resource "aws_iam_policy" "custom_cloudwatch_policy" {
   name        = "CustomCloudWatchPolicy"
   description = "Allows EC2 to push custom metrics to CloudWatch"
@@ -34,6 +29,15 @@ resource "aws_iam_policy" "custom_cloudwatch_policy" {
           "cloudwatch:PutMetricData"
         ],
         Resource : "*"
+      },
+      {
+        Effect : "Allow",
+        Action : [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource : "arn:aws:logs:*:*:*"
       }
     ]
   })
