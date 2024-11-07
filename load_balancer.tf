@@ -127,7 +127,3 @@ resource "aws_cloudwatch_metric_alarm" "cpu_low" {
     AutoScalingGroupName = aws_autoscaling_group.app_asg.name
   }
 }
-
-
-
-

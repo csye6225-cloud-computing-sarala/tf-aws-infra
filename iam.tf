@@ -1,6 +1,6 @@
 # IAM Role for EC2 instance
 resource "aws_iam_role" "ec2_role" {
-  name = "ec2_role_v2"
+  name = "ec2_role_v3"
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -16,11 +16,6 @@ resource "aws_iam_role" "ec2_role" {
   }
 }
 
-# IAM Policy for CloudWatch Agent
-# data "aws_iam_policy" "agent_policy" {
-#   arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-# }
-
 resource "aws_iam_policy" "custom_cloudwatch_policy" {
   name        = "CustomCloudWatchPolicy"
   description = "Allows EC2 to push custom metrics to CloudWatch"
@@ -31,27 +26,18 @@ resource "aws_iam_policy" "custom_cloudwatch_policy" {
       {
         Effect : "Allow",
         Action : [
-          "ssm:DescribeAssociation",
-          "ssm:GetAutomationExecution",
-          "ssm:GetDocument",
-          "ssm:GetParameter",
-          "ssm:GetParameters",
-          "ssm:ListAssociations",
-          "ssm:ListInstanceAssociations",
-          "ssm:PutComplianceItems",
-          "ssm:PutConfigurePackageResult",
-          "ssm:UpdateAssociationStatus",
-          "ssm:UpdateInstanceAssociationStatus",
-          "ssmmessages:*",
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:DescribeLogGroups",
-          "logs:DescribeLogStreams",
-          "logs:PutLogEvents",
-          "ec2:DescribeTags",
           "cloudwatch:PutMetricData"
         ],
         Resource : "*"
+      },
+      {
+        Effect : "Allow",
+        Action : [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource : "arn:aws:logs:*:*:*"
       }
     ]
   })
@@ -91,6 +77,6 @@ resource "aws_iam_role_policy" "s3_policy" {
 
 # IAM Instance Profile for EC2
 resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "ec2_instance_profile_v2"
+  name = "ec2_instance_profile_v3"
   role = aws_iam_role.ec2_role.name
 }

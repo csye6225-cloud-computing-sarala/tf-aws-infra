@@ -28,10 +28,6 @@ resource "aws_launch_template" "app_launch_template" {
 
   user_data = base64encode(<<-EOF
 #!/bin/bash -ex
-# Stop services if running
-# sudo systemctl stop amazon-cloudwatch-agent || true
-# sudo systemctl stop csye6225.service || true
-
 # Install updates and dependencies
 sudo apt-get update
 sudo apt-get install -y postgresql-client curl
@@ -67,90 +63,30 @@ AWS_REGION=$AWS_REGION
 S3_BUCKET=$S3_BUCKET
 EOL
 
-# # Update CloudWatch Agent configuration
-# sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 \
-#   -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
+# Ensure CloudWatch Agent configuration file exists
+  if [ ! -f "/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json" ]; then
+    echo "CloudWatch Agent configuration file not found."
+    exit 1
+  fi
 
-# Download and install CloudWatch Agent
-    wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb -O amazon-cloudwatch-agent.deb
-    sudo dpkg -i -E ./amazon-cloudwatch-agent.deb
- 
-    # Fetch the InstanceId for CloudWatch dimension
-    INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
- 
-    # Create CloudWatch Agent configuration with InstanceId as a dimension
-    cat <<'CONFIG' > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
-    {
-      "agent": {
-          "metrics_collection_interval": 10,
-          "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
-      },
-      "logs": {
-          "logs_collected": {
-              "files": {
-                  "collect_list": [
-                      {
-                          "file_path": "/var/log/syslog",
-                          "log_group_name": "EC2AppLogs",
-                          "log_stream_name": "syslog",
-                          "timestamp_format": "%b %d %H:%M:%S"
-                      },
-                      {
-                          "file_path": "/opt/webapp/logs/app.log",
-                          "log_group_name": "EC2AppLogs",
-                          "log_stream_name": "app_log",
-                          "timestamp_format": "%Y-%m-%dT%H:%M:%S.%LZ"
-                      }
-                  ]
-              }
-          }
-      },
-      "metrics": {
-        "append_dimensions": {
-          "InstanceId": "$INSTANCE_ID"
-        },
-        "metrics_collected": {
-          "statsd": {
-            "service_address": ":8125",
-            "metrics_collection_interval": 15,
-            "metrics_aggregation_interval": 300
-          },
-          "disk": {
-            "resources": ["/"],
-            "measurement": ["used_percent"],
-            "metrics_collection_interval": 60
-          },
-          "mem": {
-            "measurement": ["mem_used_percent"],
-            "metrics_collection_interval": 60
-          }
-        }
-      }
-    }
-    CONFIG
- 
-    # Start CloudWatch Agent with configuration
-    sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-        -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
+  # Update CloudWatch Agent configuration and start the agent
+  # sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 \
+  #   -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
 
-# # Reload systemd daemon
-# sudo systemctl daemon-reload
+# Reload systemd to pick up any changes
+sudo systemctl daemon-reload
 
-# # Enable and start the services
-sleep 5
-# nohup sudo systemctl restart csye6225.service &
-# sleep 5
-# nohup sudo systemctl restart amazon-cloudwatch-agent &
+# Enable services to start on boot
+sudo systemctl enable csye6225.service
+sudo systemctl enable amazon-cloudwatch-agent
 
-# # Check the status of the services
-# sudo systemctl status amazon-cloudwatch-agent --no-pager
-# sudo systemctl status csye6225.service --no-pager
-
-# sleep 5
+# Restart services to pick up new environment variables
 sudo systemctl restart csye6225.service
-sleep 5
 sudo systemctl restart amazon-cloudwatch-agent
 
+# Verify status of services
+sudo systemctl status amazon-cloudwatch-agent --no-pager
+sudo systemctl status csye6225.service --no-pager
 EOF
   )
 

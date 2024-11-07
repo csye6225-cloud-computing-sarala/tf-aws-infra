@@ -23,12 +23,14 @@
 # S3_BUCKET="${aws_s3_bucket.s3_bucket.bucket}"
 
 # # Store environment variables globally
-# echo "DB_HOST=$DB_HOST" | sudo tee -a /etc/environment
-# echo "DB_USER=$DB_USER" | sudo tee -a /etc/environment
-# echo "DB_PASSWORD=$DB_PASSWORD" | sudo tee -a /etc/environment
-# echo "DB_NAME=$DB_NAME" | sudo tee -a /etc/environment
-# echo "AWS_REGION=$AWS_REGION" | sudo tee -a /etc/environment
-# echo "S3_BUCKET=$S3_BUCKET" | sudo tee -a /etc/environment
+# sudo tee -a /etc/environment <<EOL
+# DB_HOST=$DB_HOST
+# DB_USER=$DB_USER
+# DB_PASSWORD=$DB_PASSWORD
+# DB_NAME=$DB_NAME
+# AWS_REGION=$AWS_REGION
+# S3_BUCKET=$S3_BUCKET
+# EOL
 
 # # Update the .env file for the application
 # sudo tee /var/www/webapp/.env > /dev/null <<EOL
@@ -43,28 +45,30 @@
 # S3_BUCKET=$S3_BUCKET
 # EOL
 
-# # Update CloudWatch Agent configuration
-# sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop
-# sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 \
-#   -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
+# # Ensure CloudWatch Agent configuration file exists
+#   if [ ! -f "/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json" ]; then
+#     echo "CloudWatch Agent configuration file not found."
+#     exit 1
+#   fi
 
-# sleep 5
+#   # Update CloudWatch Agent configuration and start the agent
+#   # sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 \
+#   #   -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
 
-# # Restart CloudWatch Agent with a delay to ensure it's fully stopped
-# sleep 5
-# nohup sudo systemctl restart amazon-cloudwatch-agent &
+# # Reload systemd to pick up any changes
+# sudo systemctl daemon-reload
 
-# # Restart the application service and ensure it's running
-# sleep 5
-# nohup sudo systemctl restart csye6225.service &
+# # Enable services to start on boot
+# sudo systemctl enable csye6225.service
+# sudo systemctl enable amazon-cloudwatch-agent
 
-
-# # Verify status of services after restart
-# sudo systemctl status amazon-cloudwatch-agent
-# sudo systemctl status csye6225.service
-# sudo systemctl restart amazon-cloudwatch-agent
+# # Restart services to pick up new environment variables
 # sudo systemctl restart csye6225.service
+# sudo systemctl restart amazon-cloudwatch-agent
 
+# # Verify status of services
+# sudo systemctl status amazon-cloudwatch-agent --no-pager
+# sudo systemctl status csye6225.service --no-pager
 # EOF
 
 #   root_block_device {

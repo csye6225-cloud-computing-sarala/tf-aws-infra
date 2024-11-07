@@ -89,4 +89,3 @@ resource "aws_security_group" "load_balancer_sg" {
     Name = "load-balancer-security-group"
   }
 }
-
