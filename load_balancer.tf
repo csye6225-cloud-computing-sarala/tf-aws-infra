@@ -1,9 +1,9 @@
 # Auto Scaling Group
 resource "aws_autoscaling_group" "app_asg" {
   name                = "app-asg"
-  max_size            = 3
-  min_size            = 1
-  desired_capacity    = 1
+  max_size            = 5
+  min_size            = 3
+  desired_capacity    = 3
   default_cooldown    = 60
   vpc_zone_identifier = aws_subnet.public.*.id
   launch_template {
@@ -34,11 +34,11 @@ resource "aws_lb_target_group" "app_tg" {
 
   health_check {
     healthy_threshold   = 5
-    unhealthy_threshold = 2
+    unhealthy_threshold = 3
     timeout             = 5
-    interval            = 30
+    interval            = var.health_check_interval
     path                = "/healthz"
-    matcher             = "200-399"
+    matcher             = "200"
   }
 }
 
@@ -70,9 +70,9 @@ resource "aws_lb_listener" "app_listener" {
 # Scale Up Policy
 resource "aws_autoscaling_policy" "scale_up" {
   name                   = "scale-up-policy"
-  scaling_adjustment     = 1
+  scaling_adjustment     = var.scale_up_adjustment
   adjustment_type        = "ChangeInCapacity"
-  cooldown               = 300
+  cooldown               = var.scale_up_cooldown
   autoscaling_group_name = aws_autoscaling_group.app_asg.name
 }
 
@@ -80,7 +80,7 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
   alarm_name          = "cpu-high-alarm"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
-  threshold           = 5
+  threshold           = var.cpu_high_threshold
   alarm_description   = "Scale up when CPU > 5%"
   alarm_actions       = [aws_autoscaling_policy.scale_up.arn]
 
@@ -89,7 +89,7 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
     return_data = true
 
     metric {
-      metric_name = "CPUUtilization"
+      metric_name = var.metric_name
       namespace   = "AWS/EC2"
       period      = 60
       stat        = "Average"
@@ -105,9 +105,9 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
 # Scale Down Policy
 resource "aws_autoscaling_policy" "scale_down" {
   name                   = "scale-down-policy"
-  scaling_adjustment     = -1
+  scaling_adjustment     = var.scale_down_adjustment
   adjustment_type        = "ChangeInCapacity"
-  cooldown               = 300
+  cooldown               = var.scale_down_cooldown
   autoscaling_group_name = aws_autoscaling_group.app_asg.name
 }
 
@@ -119,7 +119,7 @@ resource "aws_cloudwatch_metric_alarm" "cpu_low" {
   namespace           = "AWS/EC2"
   period              = 60
   statistic           = "Average"
-  threshold           = 3
+  threshold           = var.cpu_low_threshold
   alarm_description   = "Scale down when CPU < 3%"
   alarm_actions       = [aws_autoscaling_policy.scale_down.arn]
 

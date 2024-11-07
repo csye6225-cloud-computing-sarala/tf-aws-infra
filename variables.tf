@@ -113,3 +113,43 @@ variable "domain_name" {
   description = "domain name"
   type        = string
 }
+
+variable "health_check_interval" {
+  description = "health check interval"
+  type        = string
+}
+
+variable "scale_up_adjustment" {
+  description = "scale adjustment for scale up"
+  type        = string
+}
+
+variable "scale_up_cooldown" {
+  description = "cooldown for scale up"
+  type        = string
+}
+
+variable "cpu_high_threshold" {
+  description = "threshold for cpu high"
+  type        = string
+}
+
+variable "metric_name" {
+  description = "name for metric"
+  type        = string
+}
+
+variable "scale_down_adjustment" {
+  description = "scale adjustment for scale down"
+  type        = string
+}
+
+variable "scale_down_cooldown" {
+  description = "cooldown for scale down"
+  type        = string
+}
+
+variable "cpu_low_threshold" {
+  description = "threshold for cpu low"
+  type        = string
+}
