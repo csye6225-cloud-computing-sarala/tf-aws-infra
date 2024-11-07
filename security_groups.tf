@@ -6,10 +6,10 @@ resource "aws_security_group" "app_sg" {
 
   # SSH Access
   ingress {
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
-    security_groups = [aws_security_group.load_balancer_sg.id]
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   # Application Port Access from Load Balancer
