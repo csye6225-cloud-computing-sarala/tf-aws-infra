@@ -2,6 +2,7 @@
 resource "aws_launch_template" "app_launch_template" {
   name          = "csye6225_asg"
   image_id      = var.ami_id
+  depends_on    = [aws_db_instance.postgres_instance]
   instance_type = var.instance_type
   key_name      = var.key_name
 
