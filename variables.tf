@@ -153,3 +153,28 @@ variable "cpu_low_threshold" {
   description = "threshold for cpu low"
   type        = string
 }
+
+variable "db_host" {
+  description = "Database host"
+}
+
+variable "db_port" {
+  description = "Database port"
+  default     = 5432
+}
+
+variable "mailgun_api_key" {
+  description = "Mailgun API key for sending emails"
+  type        = string
+  sensitive   = true
+}
+
+variable "mailgun_domain" {
+  description = "Mailgun domain for sending emails"
+  type        = string
+}
+
+variable "email_sender" {
+  description = "Verified SES email sender address"
+  type        = string
+}
