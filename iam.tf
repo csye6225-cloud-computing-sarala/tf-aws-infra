@@ -47,6 +47,7 @@ resource "aws_iam_policy" "custom_cloudwatch_policy" {
 resource "aws_iam_role_policy_attachment" "custom_cloudwatch_policy_attachment" {
   role       = aws_iam_role.ec2_role.name
   policy_arn = aws_iam_policy.custom_cloudwatch_policy.arn
+
 }
 
 # Policy document for S3 access
@@ -79,4 +80,30 @@ resource "aws_iam_role_policy" "s3_policy" {
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "ec2_instance_profile_v3"
   role = aws_iam_role.ec2_role.name
+}
+
+resource "aws_iam_policy" "sns_publish_policy" {
+  name        = "SNSSendPublishPolicy"
+  description = "Allows publishing to the user-registration-topic SNS topic"
+
+  policy = jsonencode({
+    Version : "2012-10-17",
+    Statement : [
+      {
+        Effect = "Allow",
+        Action = "sns:Publish",
+        Resource : aws_sns_topic.user_registration_topic.arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "sns_publish_policy_attachment" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.sns_publish_policy.arn
+
+  depends_on = [
+    aws_iam_policy.sns_publish_policy,
+    aws_iam_role.ec2_role
+  ]
 }

@@ -38,14 +38,6 @@ resource "aws_iam_policy" "lambda_policy" {
         ],
         Resource : "arn:aws:logs:*:*:*"
       },
-      # {
-      #   Effect : "Allow",
-      #   Action : [
-      #     "ses:SendEmail",
-      #     "ses:SendRawEmail"
-      #   ],
-      #   Resource : "*"
-      # },
       {
         Effect : "Allow",
         Action : [
@@ -72,7 +64,6 @@ resource "aws_iam_policy" "lambda_policy" {
           aws_secretsmanager_secret.mailgun_credentials.arn
         ]
       },
-      # SSM permissions (if using SSM)
       {
         Effect : "Allow",
         Action : [
@@ -84,15 +75,6 @@ resource "aws_iam_policy" "lambda_policy" {
           "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/lambda/*"
         ]
       },
-      # # SNS permissions (if Lambda needs to publish messages)
-      # {
-      #   Effect : "Allow",
-      #   Action : [
-      #     "sns:Publish"
-      #   ],
-      #   Resource : aws_sns_topic.user_registration_topic.arn
-      # },
-      # VPC permissions (if Lambda is in a VPC)
       {
         Effect : "Allow",
         Action : [
@@ -108,6 +90,7 @@ resource "aws_iam_policy" "lambda_policy" {
 
 # Lambda Function Resource
 resource "aws_lambda_function" "email_verification_function" {
+  timeout          = 60
   filename         = "${path.module}/lambda_function.zip" # Update with your zip file path
   function_name    = "EmailVerificationFunction"
   role             = aws_iam_role.lambda_role.arn
@@ -123,18 +106,12 @@ resource "aws_lambda_function" "email_verification_function" {
       DB_PASSWORD_SECRET = aws_secretsmanager_secret.db_credentials.arn
       DB_NAME            = var.db_name
       DB_PORT            = var.db_port
-      AWS_REGION         = var.aws_region
+      # AWS_REGION         = var.aws_region
       EMAIL_SENDER       = var.email_sender
       MAILGUN_SECRET_ARN = aws_secretsmanager_secret.mailgun_credentials.arn
       MAILGUN_DOMAIN     = var.mailgun_domain
     }
   }
-
-  vpc_config {
-    subnet_ids         = var.private_subnets
-    security_group_ids = [aws_security_group.lambda_sg.id]
-  }
-
   depends_on = [aws_iam_role_policy_attachment.lambda_policy_attachment]
 }
 
