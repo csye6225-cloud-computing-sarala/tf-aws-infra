@@ -29,16 +29,15 @@ resource "aws_secretsmanager_secret_version" "email_config_version" {
   })
 }
 
-#Secret for Mailgun Credentials
+# Secrets Manager Secret for Mailgun API Key
 resource "aws_secretsmanager_secret" "mailgun_credentials" {
-  name        = "mailgun_credentials__${local.unique_id}"
-  description = "Mailgun API credentials for Lambda function"
+  name = "mailgun_credentials_${local.unique_id}"
 }
 
+# Secret value (the API key)
 resource "aws_secretsmanager_secret_version" "mailgun_credentials_version" {
   secret_id = aws_secretsmanager_secret.mailgun_credentials.id
   secret_string = jsonencode({
     MAILGUN_API_KEY = var.mailgun_api_key
-    MAILGUN_DOMAIN  = var.mailgun_domain
   })
 }
