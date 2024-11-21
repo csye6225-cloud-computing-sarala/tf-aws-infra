@@ -1,5 +1,8 @@
+locals {
+  unique_id = uuid()
+}
 resource "aws_secretsmanager_secret" "db_credentials" {
-  name        = "db_credentials_v2"
+  name        = "db_credentials__${local.unique_id}"
   description = "Database credentials for Lambda function"
 }
 
@@ -15,7 +18,7 @@ resource "aws_secretsmanager_secret_version" "db_credentials_version" {
 }
 
 resource "aws_secretsmanager_secret" "email_config" {
-  name        = "email_config_v2"
+  name        = "email_config__${local.unique_id}"
   description = "Email configuration for Lambda function"
 }
 
@@ -26,16 +29,15 @@ resource "aws_secretsmanager_secret_version" "email_config_version" {
   })
 }
 
-#Secret for Mailgun Credentials
+# Secrets Manager Secret for Mailgun API Key
 resource "aws_secretsmanager_secret" "mailgun_credentials" {
-  name        = "mailgun_credentials_v2"
-  description = "Mailgun API credentials for Lambda function"
+  name = "mailgun_credentials_${local.unique_id}"
 }
 
+# Secret value (the API key)
 resource "aws_secretsmanager_secret_version" "mailgun_credentials_version" {
   secret_id = aws_secretsmanager_secret.mailgun_credentials.id
   secret_string = jsonencode({
     MAILGUN_API_KEY = var.mailgun_api_key
-    MAILGUN_DOMAIN  = var.mailgun_domain
   })
 }

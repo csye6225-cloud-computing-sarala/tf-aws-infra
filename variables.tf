@@ -163,16 +163,17 @@ variable "db_port" {
   default     = 5432
 }
 
+variable "mailgun_domain" {
+  description = "Your Mailgun domain"
+  type        = string
+}
+
 variable "mailgun_api_key" {
-  description = "Mailgun API key for sending emails"
+  description = "Your Mailgun API key"
   type        = string
   sensitive   = true
 }
 
-variable "mailgun_domain" {
-  description = "Mailgun domain for sending emails"
-  type        = string
-}
 
 variable "email_sender" {
   description = "Verified SES email sender address"

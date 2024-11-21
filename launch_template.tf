@@ -40,6 +40,8 @@ DB_PASSWORD="${var.db_password}"
 DB_NAME="${var.db_name}"
 AWS_REGION="${var.aws_region}"
 S3_BUCKET="${aws_s3_bucket.s3_bucket.bucket}"
+SNS_TOPIC_ARN="${aws_sns_topic.user_registration_topic.arn}"
+DOMAIN="${var.domain_name}"
 
 # Store environment variables globally
 sudo tee -a /etc/environment <<EOL
@@ -49,6 +51,8 @@ DB_PASSWORD=$DB_PASSWORD
 DB_NAME=$DB_NAME
 AWS_REGION=$AWS_REGION
 S3_BUCKET=$S3_BUCKET
+SNS_TOPIC_ARN=$SNS_TOPIC_ARN
+DOMAIN=$DOMAIN
 EOL
 
 # Update the .env file for the application
@@ -62,6 +66,8 @@ DB_DIALECT=postgres
 PORT=3000
 AWS_REGION=$AWS_REGION
 S3_BUCKET=$S3_BUCKET
+SNS_TOPIC_ARN=$SNS_TOPIC_ARN
+DOMAIN=$DOMAIN
 EOL
 
 # Ensure CloudWatch Agent configuration file exists

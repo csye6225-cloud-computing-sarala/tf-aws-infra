@@ -47,6 +47,7 @@ resource "aws_iam_policy" "custom_cloudwatch_policy" {
 resource "aws_iam_role_policy_attachment" "custom_cloudwatch_policy_attachment" {
   role       = aws_iam_role.ec2_role.name
   policy_arn = aws_iam_policy.custom_cloudwatch_policy.arn
+
 }
 
 # Policy document for S3 access
@@ -79,4 +80,64 @@ resource "aws_iam_role_policy" "s3_policy" {
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "ec2_instance_profile_v3"
   role = aws_iam_role.ec2_role.name
+}
+
+# IAM Policy for Lambda Function
+resource "aws_iam_policy" "lambda_policy" {
+  name        = "LambdaExecutionPolicy"
+  description = "IAM policy for Lambda execution"
+
+  policy = jsonencode({
+    Version : "2012-10-17",
+    Statement : [
+      # Allow Lambda to write logs
+      {
+        Effect : "Allow",
+        Action : [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource : "arn:aws:logs:*:*:*"
+      },
+      # Allow Lambda to retrieve secrets from Secrets Manager
+      {
+        Effect : "Allow",
+        Action : [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ],
+        Resource : aws_secretsmanager_secret.mailgun_credentials.arn
+      }
+    ]
+  })
+}
+
+# Attach the policy to the Lambda role
+resource "aws_iam_role_policy_attachment" "attach_lambda_policy" {
+  role       = aws_iam_role.lambda_execution_role.name
+  policy_arn = aws_iam_policy.lambda_policy.arn
+}
+
+# IAM Policy to allow EC2 instances to publish to SNS topic
+resource "aws_iam_policy" "sns_publish_policy" {
+  name        = "SNSPublishPolicy"
+  description = "Policy to allow EC2 instances to publish to SNS topic"
+
+  policy = jsonencode({
+    Version : "2012-10-17",
+    Statement : [
+      {
+        Effect : "Allow",
+        Action : "sns:Publish",
+        Resource : aws_sns_topic.user_registration_topic.arn
+      }
+    ]
+  })
+}
+
+# Attach the policy to the EC2 role
+resource "aws_iam_role_policy_attachment" "sns_publish_policy_attachment" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.sns_publish_policy.arn
 }
