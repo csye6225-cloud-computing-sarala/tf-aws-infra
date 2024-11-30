@@ -19,6 +19,7 @@ resource "aws_security_group" "app_sg" {
     to_port         = 3000
     protocol        = "tcp"
     security_groups = [aws_security_group.load_balancer_sg.id]
+    description     = "Allow traffic from Load Balancer only"
   }
 
   egress {
@@ -27,6 +28,7 @@ resource "aws_security_group" "app_sg" {
     protocol         = "-1"
     cidr_blocks      = ["0.0.0.0/0"]
     ipv6_cidr_blocks = ["::/0"]
+    description      = "Allow all outbound traffic"
   }
 
   tags = {
@@ -66,19 +68,21 @@ resource "aws_security_group" "load_balancer_sg" {
   vpc_id      = aws_vpc.main_vpc.id
 
   ingress {
-    from_port        = 80
+    from_port        = 80 # For HTTP
     to_port          = 80
     protocol         = "tcp"
     cidr_blocks      = ["0.0.0.0/0"]
     ipv6_cidr_blocks = ["::/0"]
+    description      = "Allow HTTP traffic from the internet"
   }
 
   ingress {
-    from_port        = 443
+    from_port        = 443 # For HTTPS
     to_port          = 443
     protocol         = "tcp"
     cidr_blocks      = ["0.0.0.0/0"]
     ipv6_cidr_blocks = ["::/0"]
+    description      = "Allow HTTPS traffic from the internet"
   }
 
   egress {
@@ -87,6 +91,7 @@ resource "aws_security_group" "load_balancer_sg" {
     protocol         = "-1"
     cidr_blocks      = ["0.0.0.0/0"]
     ipv6_cidr_blocks = ["::/0"]
+    description      = "Allow all outbound traffic"
   }
 
   tags = {

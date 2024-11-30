@@ -3,18 +3,51 @@ resource "aws_iam_role" "ec2_role" {
   name = "ec2_role_v3"
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [{
-      Action = "sts:AssumeRole",
-      Effect = "Allow",
-      Principal = {
-        Service = "ec2.amazonaws.com"
+    Statement = [
+      {
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
       }
-    }]
+    ]
   })
   tags = {
     "Name" = "ec2-iam-role"
   }
 }
+
+resource "aws_iam_policy" "secretsmanager_access_policy" {
+  name        = "EC2SecretsManagerAccessPolicy"
+  description = "Policy to allow EC2 instances to access Secrets Manager"
+
+  policy = jsonencode({
+    Version : "2012-10-17",
+    Statement : [
+      {
+        Effect : "Allow",
+        Action : [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ],
+        Resource : aws_secretsmanager_secret.db_credentials.arn
+      },
+      {
+        Effect : "Allow",
+        Action : ["kms:Decrypt"],
+        Resource : aws_kms_key.secrets_kms_key.arn
+      }
+    ]
+  })
+}
+
+# Attach the policy to the EC2 role
+resource "aws_iam_role_policy_attachment" "secretsmanager_access_policy_attachment" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.secretsmanager_access_policy.arn
+}
+
 
 resource "aws_iam_policy" "custom_cloudwatch_policy" {
   name        = "CustomCloudWatchPolicy"
@@ -48,6 +81,35 @@ resource "aws_iam_role_policy_attachment" "custom_cloudwatch_policy_attachment" 
   role       = aws_iam_role.ec2_role.name
   policy_arn = aws_iam_policy.custom_cloudwatch_policy.arn
 
+}
+
+# IAM Policy for EC2 KMS Key Access
+resource "aws_iam_policy" "ec2_kms_policy" {
+  name        = "EC2KMSKeyPolicy"
+  description = "Policy to allow EC2 to access KMS keys"
+
+  policy = jsonencode({
+    Version : "2012-10-17",
+    Statement : [
+      {
+        Sid : "AllowEC2KMSAccess",
+        Effect : "Allow",
+        Action : [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:GenerateDataKey",
+          "kms:DescribeKey"
+        ],
+        Resource : aws_kms_key.ec2_kms_key.arn
+      }
+    ]
+  })
+}
+
+# Attach the policy to the EC2 role
+resource "aws_iam_role_policy_attachment" "ec2_kms_policy_attachment" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.ec2_kms_policy.arn
 }
 
 # Policy document for S3 access
@@ -107,7 +169,31 @@ resource "aws_iam_policy" "lambda_policy" {
           "secretsmanager:GetSecretValue",
           "secretsmanager:DescribeSecret"
         ],
-        Resource : aws_secretsmanager_secret.mailgun_credentials.arn
+        Resource : [
+          aws_secretsmanager_secret.email_service_credentials.arn,
+          aws_secretsmanager_secret.mailgun_credentials.arn
+        ]
+      },
+      {
+        Effect : "Allow",
+        Action : ["kms:Decrypt"],
+        Resource : aws_kms_key.secrets_kms_key.arn
+      }
+    ]
+  })
+}
+
+# IAM Role for Lambda Function
+resource "aws_iam_role" "lambda_execution_role" {
+  name = "lambda_execution_role"
+
+  assume_role_policy = jsonencode({
+    Version : "2012-10-17",
+    Statement : [
+      {
+        Action : "sts:AssumeRole",
+        Principal : { Service : "lambda.amazonaws.com" },
+        Effect : "Allow"
       }
     ]
   })
@@ -140,4 +226,247 @@ resource "aws_iam_policy" "sns_publish_policy" {
 resource "aws_iam_role_policy_attachment" "sns_publish_policy_attachment" {
   role       = aws_iam_role.ec2_role.name
   policy_arn = aws_iam_policy.sns_publish_policy.arn
+}
+
+# KMS Key for EC2
+resource "aws_kms_key" "ec2_kms_key" {
+  description         = "KMS key for EC2"
+  key_usage           = "ENCRYPT_DECRYPT"
+  is_enabled          = true
+  enable_key_rotation = true
+}
+
+# Policy for Secrets Manager and KMS access
+resource "aws_iam_policy" "ec2_secrets_policy" {
+  name        = "ec2_secrets_policy"
+  description = "Policy for EC2 to access Secrets Manager and KMS"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect   = "Allow",
+        Action   = ["secretsmanager:GetSecretValue"],
+        Resource = aws_secretsmanager_secret.db_password_secret.arn
+      },
+      {
+        Effect   = "Allow",
+        Action   = ["kms:Decrypt"],
+        Resource = aws_kms_key.secrets_kms_key.arn
+      }
+    ]
+  })
+}
+
+# Attach Secrets Manager Policy to EC2 Role
+resource "aws_iam_role_policy_attachment" "ec2_secrets_policy_attachment" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.ec2_secrets_policy.arn
+}
+
+# KMS Key for RDS
+resource "aws_kms_key" "rds_kms_key" {
+  description         = "KMS key for RDS"
+  key_usage           = "ENCRYPT_DECRYPT"
+  is_enabled          = true
+  enable_key_rotation = true
+  tags = {
+    Purpose = "Encrypt RDS databases"
+  }
+}
+resource "aws_kms_key_policy" "rds_kms_policy" {
+  key_id = aws_kms_key.rds_kms_key.key_id
+
+  policy = jsonencode({
+    Version : "2012-10-17",
+    Statement : [
+      {
+        Sid : "AllowRootAccess",
+        Effect : "Allow",
+        Principal : {
+          AWS : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        },
+        Action : "kms:*",
+        Resource : "*"
+        }, {
+        Sid : "AllowRDSAccess",
+        Effect : "Allow",
+        Principal : {
+          Service : "rds.amazonaws.com"
+        },
+        Action : [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ],
+        Resource : "*"
+      }
+    ]
+  })
+}
+
+# IAM Policy for Secrets Manager KMS Key
+resource "aws_kms_key" "secrets_kms_key" {
+  description         = "KMS key for Secrets Manager"
+  key_usage           = "ENCRYPT_DECRYPT"
+  is_enabled          = true
+  enable_key_rotation = true
+  tags = {
+    Purpose = "Encrypt Secrets Manager secrets"
+  }
+}
+
+resource "aws_kms_key_policy" "secrets_kms_policy" {
+  key_id = aws_kms_key.secrets_kms_key.key_id
+
+  policy = jsonencode({
+    Version : "2012-10-17",
+    Statement : [
+      {
+        Sid : "AllowRootAccess",
+        Effect : "Allow",
+        Principal : {
+          AWS : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        },
+        Action : "kms:*",
+        Resource : "*"
+      },
+      {
+        Sid : "AllowSecretsManagerAccess",
+        Effect : "Allow",
+        Principal : {
+          Service : "secretsmanager.amazonaws.com"
+        },
+        Action : [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ],
+        Resource : "*"
+      }
+    ]
+  })
+}
+
+# IAM Policy for S3 KMS Key
+resource "aws_kms_key" "s3_kms_key" {
+  description         = "KMS key for S3"
+  key_usage           = "ENCRYPT_DECRYPT"
+  is_enabled          = true
+  enable_key_rotation = true
+  tags = {
+    Purpose = "Encrypt S3 buckets"
+  }
+}
+
+resource "aws_kms_key_policy" "s3_kms_policy" {
+  key_id = aws_kms_key.s3_kms_key.key_id
+
+  policy = jsonencode({
+    Version : "2012-10-17",
+    Statement : [
+      {
+        Sid : "AllowRootAccess",
+        Effect : "Allow",
+        Principal : {
+          AWS : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        },
+        Action : "kms:*",
+        Resource : "*"
+      },
+      {
+        Sid : "AllowS3Access",
+        Effect : "Allow",
+        Principal : {
+          Service : "s3.amazonaws.com"
+        },
+        Action : [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ],
+        Resource : "*"
+      }
+    ]
+  })
+}
+# Data block to get the AWS account ID
+data "aws_caller_identity" "current" {}
+
+# IAM Role for Key Rotation Lambda
+resource "aws_iam_role" "key_rotation_lambda_role" {
+  name = "key_rotation_lambda_role"
+
+  assume_role_policy = jsonencode({
+    Version : "2012-10-17",
+    Statement : [
+      {
+        Action : "sts:AssumeRole",
+        Effect : "Allow",
+        Principal : { Service : "lambda.amazonaws.com" }
+      }
+    ]
+  })
+
+  tags = {
+    Name = "key-rotation-lambda-role"
+  }
+}
+
+# IAM Policy for Key Rotation Lambda
+resource "aws_iam_policy" "key_rotation_lambda_policy" {
+  name        = "key_rotation_lambda_policy"
+  description = "Policy for Key Rotation Lambda Function"
+
+  policy = jsonencode({
+    Version : "2012-10-17",
+    Statement : [
+      # Permissions to manage KMS keys
+      {
+        Effect : "Allow",
+        Action : [
+          "kms:CreateKey",
+          "kms:DisableKey",
+          "kms:ScheduleKeyDeletion",
+          "kms:ListKeys",
+          "kms:ListAliases",
+          "kms:CreateAlias",
+          "kms:UpdateAlias",
+          "kms:DescribeKey",
+          "kms:PutKeyPolicy"
+        ],
+        Resource : "*"
+      },
+      # Permissions to update resource configurations
+      {
+        Effect : "Allow",
+        Action : [
+          "rds:ModifyDBInstance",
+          "s3:PutBucketEncryption",
+          "secretsmanager:UpdateSecret",
+          # Add other services as needed
+        ],
+        Resource : "*"
+      },
+      # Permissions to write logs
+      {
+        Effect : "Allow",
+        Action : [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource : "arn:aws:logs:*:*:*"
+      }
+    ]
+  })
+}
+
+# Attach the policy to the Lambda role
+resource "aws_iam_role_policy_attachment" "key_rotation_lambda_policy_attachment" {
+  role       = aws_iam_role.key_rotation_lambda_role.name
+  policy_arn = aws_iam_policy.key_rotation_lambda_policy.arn
 }

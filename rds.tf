@@ -8,7 +8,7 @@ resource "aws_db_instance" "postgres_instance" {
   instance_class         = var.db_instance_class
   db_name                = var.db_name
   username               = var.db_username
-  password               = var.db_password
+  password               = random_password.db_password.result
   parameter_group_name   = aws_db_parameter_group.postgresql_param_group.name
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.db_security_group.id]
@@ -16,6 +16,8 @@ resource "aws_db_instance" "postgres_instance" {
   publicly_accessible    = false
   multi_az               = false
   apply_immediately      = true
+  storage_encrypted      = true
+  kms_key_id             = aws_kms_key.rds_kms_key.arn
 
   tags = {
     Name = "csye6225-postgresql"

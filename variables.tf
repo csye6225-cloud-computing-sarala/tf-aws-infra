@@ -67,11 +67,11 @@ variable "db_username" {
   type        = string
 }
 
-variable "db_password" {
-  description = "The database password"
-  type        = string
-  sensitive   = true
-}
+# variable "db_password" {
+#   description = "The database password"
+#   type        = string
+#   sensitive   = true
+# }
 
 variable "db_allocated_storage" {
   description = "The allocated storage size in GB for the RDS instance"

@@ -139,4 +139,7 @@ dig TXT pic._domainkey.dev.saralacsye6225.me
 To Check for DKIM Record for Demo Account
 ````bash
 dig TXT mx._domainkey.demo.saralacsye6225.me
+
+psql --host=csye6225.c1yso8ukk91g.us-east-1.rds.amazonaws.com --port=5432 --username=csye6225 --dbname=csye6225
+
 ````
