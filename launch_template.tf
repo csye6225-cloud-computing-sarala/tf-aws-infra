@@ -21,9 +21,11 @@ resource "aws_launch_template" "app_launch_template" {
     device_name = "/dev/xvda"
 
     ebs {
-      volume_size           = var.volume_size
-      volume_type           = "gp2"
-      delete_on_termination = true
+      volume_size = var.volume_size
+      volume_type = "gp2"
+      # delete_on_termination = true
+      encrypted  = true
+      kms_key_id = aws_kms_key.ec2_kms_key.arn
     }
   }
 

@@ -83,7 +83,63 @@ resource "aws_iam_role_policy_attachment" "custom_cloudwatch_policy_attachment" 
 
 }
 
-# IAM Policy for EC2 KMS Key Access
+resource "aws_kms_key" "ec2_kms_key" {
+  description             = "KMS key used for encrypting EBS volumes"
+  enable_key_rotation     = true
+  rotation_period_in_days = 90
+  deletion_window_in_days = 10
+
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Sid" : "Enable IAM User Permissions",
+        "Effect" : "Allow",
+        "Principal" : {
+          "AWS" : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        },
+        "Action" : "kms:*",
+        "Resource" : "*"
+      },
+      {
+        "Sid" : "Allow service-linked role use of the customer managed key",
+        "Effect" : "Allow",
+        "Principal" : {
+          "AWS" : [
+            "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling"
+          ]
+        },
+        "Action" : [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ],
+        "Resource" : "*"
+      },
+      {
+        "Sid" : "Allow attachment of persistent resources",
+        "Effect" : "Allow",
+        "Principal" : {
+          "AWS" : [
+            "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling"
+          ]
+        },
+        "Action" : [
+          "kms:CreateGrant"
+        ],
+        "Resource" : "*",
+        "Condition" : {
+          "Bool" : {
+            "kms:GrantIsForAWSResource" : true
+          }
+        }
+      }
+    ]
+  })
+}
+
 resource "aws_iam_policy" "ec2_kms_policy" {
   name        = "EC2KMSKeyPolicy"
   description = "Policy to allow EC2 to access KMS keys"
@@ -91,6 +147,7 @@ resource "aws_iam_policy" "ec2_kms_policy" {
   policy = jsonencode({
     Version : "2012-10-17",
     Statement : [
+      # Allow EC2 to use KMS keys for encryption and decryption
       {
         Sid : "AllowEC2KMSAccess",
         Effect : "Allow",
@@ -100,8 +157,63 @@ resource "aws_iam_policy" "ec2_kms_policy" {
           "kms:GenerateDataKey",
           "kms:DescribeKey"
         ],
-        Resource : ["${aws_kms_key.secrets_kms_key.arn}",
-        "${aws_kms_key.s3_kms_key.arn}"]
+        Resource : [
+          "${aws_kms_key.ec2_kms_key.arn}"
+        ]
+      },
+
+      # Allow Auto Scaling to manage KMS keys for encrypted volumes
+      {
+        Sid : "AllowKeyAdminsToManage",
+        Effect : "Allow",
+        Action : [
+          "kms:Create*",
+          "kms:Describe*",
+          "kms:Enable*",
+          "kms:List*",
+          "kms:Put*",
+          "kms:Update*",
+          "kms:Revoke*",
+          "kms:Disable*",
+          "kms:Get*",
+          "kms:Delete*",
+          "kms:TagResource",
+          "kms:UntagResource",
+          "kms:ScheduleKeyDeletion",
+          "kms:CancelKeyDeletion"
+        ],
+        Resource : "*"
+      },
+
+      # Allow Auto Scaling to use the KMS key for EC2 instances with encrypted volumes
+      {
+        Sid : "AllowAutoScalingToUseKey",
+        Effect : "Allow",
+        Action : [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ],
+        Resource : "*"
+      },
+
+      # Allow Auto Scaling to create and manage grants for encrypted resources
+      {
+        Sid : "AllowAutoScalingGrantManagement",
+        Effect : "Allow",
+        Action : [
+          "kms:CreateGrant",
+          "kms:ListGrants",
+          "kms:RevokeGrant"
+        ],
+        Resource : "*",
+        Condition : {
+          Bool : {
+            "kms:GrantIsForAWSResource" : "true"
+          }
+        }
       }
     ]
   })
@@ -227,15 +339,6 @@ resource "aws_iam_policy" "sns_publish_policy" {
 resource "aws_iam_role_policy_attachment" "sns_publish_policy_attachment" {
   role       = aws_iam_role.ec2_role.name
   policy_arn = aws_iam_policy.sns_publish_policy.arn
-}
-
-# KMS Key for EC2
-resource "aws_kms_key" "ec2_kms_key" {
-  description             = "KMS key for EC2"
-  key_usage               = "ENCRYPT_DECRYPT"
-  is_enabled              = true
-  enable_key_rotation     = true
-  rotation_period_in_days = 90
 }
 
 # Policy for Secrets Manager and KMS access
@@ -400,78 +503,3 @@ resource "aws_kms_key_policy" "s3_kms_policy" {
 }
 # Data block to get the AWS account ID
 data "aws_caller_identity" "current" {}
-
-# IAM Role for Key Rotation Lambda
-resource "aws_iam_role" "key_rotation_lambda_role" {
-  name = "key_rotation_lambda_role"
-
-  assume_role_policy = jsonencode({
-    Version : "2012-10-17",
-    Statement : [
-      {
-        Action : "sts:AssumeRole",
-        Effect : "Allow",
-        Principal : { Service : "lambda.amazonaws.com" }
-      }
-    ]
-  })
-
-  tags = {
-    Name = "key-rotation-lambda-role"
-  }
-}
-
-# IAM Policy for Key Rotation Lambda
-resource "aws_iam_policy" "key_rotation_lambda_policy" {
-  name        = "key_rotation_lambda_policy"
-  description = "Policy for Key Rotation Lambda Function"
-
-  policy = jsonencode({
-    Version : "2012-10-17",
-    Statement : [
-      # Permissions to manage KMS keys
-      {
-        Effect : "Allow",
-        Action : [
-          "kms:CreateKey",
-          "kms:DisableKey",
-          "kms:ScheduleKeyDeletion",
-          "kms:ListKeys",
-          "kms:ListAliases",
-          "kms:CreateAlias",
-          "kms:UpdateAlias",
-          "kms:DescribeKey",
-          "kms:PutKeyPolicy"
-        ],
-        Resource : "*"
-      },
-      # Permissions to update resource configurations
-      {
-        Effect : "Allow",
-        Action : [
-          "rds:ModifyDBInstance",
-          "s3:PutBucketEncryption",
-          "secretsmanager:UpdateSecret",
-          # Add other services as needed
-        ],
-        Resource : "*"
-      },
-      # Permissions to write logs
-      {
-        Effect : "Allow",
-        Action : [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ],
-        Resource : "arn:aws:logs:*:*:*"
-      }
-    ]
-  })
-}
-
-# Attach the policy to the Lambda role
-resource "aws_iam_role_policy_attachment" "key_rotation_lambda_policy_attachment" {
-  role       = aws_iam_role.key_rotation_lambda_role.name
-  policy_arn = aws_iam_policy.key_rotation_lambda_policy.arn
-}

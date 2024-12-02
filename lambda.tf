@@ -5,7 +5,7 @@ resource "aws_sns_topic" "user_registration_topic" {
 
 # Lambda Function Resource
 resource "aws_lambda_function" "send_verification_email" {
-  filename         = "${path.module}/lambda_function.zip" # Update with your zip file path
+  filename         = "${path.module}/lambda_function.zip"
   function_name    = "EmailVerificationFunction"
   role             = aws_iam_role.lambda_execution_role.arn
   handler          = "handler.handler" # Update with your handler

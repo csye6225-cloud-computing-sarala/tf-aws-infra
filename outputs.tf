@@ -10,18 +10,6 @@ output "private_subnets" {
   value = aws_subnet.private[*].id
 }
 
-# Output the public IP of the EC2 instance
-# output "ec2_public_ip" {
-#   description = "Public IP of the EC2 instance"
-#   value       = aws_instance.app_instance.public_ip
-# }
-
-# # Output the instance ID of the EC2 instance
-# output "ec2_instance_id" {
-#   description = "Instance ID of the EC2 instance"
-#   value       = aws_instance.app_instance.id
-# }
-
 output "rds_endpoint" {
   description = "RDS endpoint to connect to the database"
   value       = aws_db_instance.postgres_instance.endpoint
