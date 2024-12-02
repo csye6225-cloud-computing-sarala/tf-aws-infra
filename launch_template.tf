@@ -21,23 +21,35 @@ resource "aws_launch_template" "app_launch_template" {
     device_name = "/dev/xvda"
 
     ebs {
-      volume_size           = var.volume_size
-      volume_type           = "gp2"
-      delete_on_termination = true
+      volume_size = var.volume_size
+      volume_type = "gp2"
+      # delete_on_termination = true
+      encrypted  = true
+      kms_key_id = aws_kms_key.ec2_kms_key.arn
     }
   }
 
   user_data = base64encode(<<-EOF
 #!/bin/bash -ex
+exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+
 # Install updates and dependencies
 sudo apt-get update
-sudo apt-get install -y postgresql-client curl
+sudo apt-get install -y postgresql-client curl awscli jq
 
 # Database connection details
-DB_HOST="${aws_db_instance.postgres_instance.address}"
-DB_USER="${var.db_username}"
-DB_PASSWORD="${var.db_password}"
-DB_NAME="${var.db_name}"
+SECRET_DATA=$(aws secretsmanager get-secret-value \
+  --secret-id "${aws_secretsmanager_secret.db_credentials.id}" \
+  --region "${var.aws_region}" \
+  --query SecretString \
+  --output text)
+
+# Database connection details
+DB_HOST=$(echo $SECRET_DATA | jq -r '.DB_HOST')
+DB_USER=$(echo $SECRET_DATA | jq -r '.DB_USER')
+DB_PASSWORD=$(echo $SECRET_DATA | jq -r '.DB_PASSWORD')
+DB_NAME=$(echo $SECRET_DATA | jq -r '.DB_NAME')
+DB_PORT=$(echo $SECRET_DATA | jq -r '.DB_PORT')
 AWS_REGION="${var.aws_region}"
 S3_BUCKET="${aws_s3_bucket.s3_bucket.bucket}"
 SNS_TOPIC_ARN="${aws_sns_topic.user_registration_topic.arn}"
