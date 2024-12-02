@@ -143,3 +143,13 @@ dig TXT mx._domainkey.demo.saralacsye6225.me
 psql --host=csye6225.c1yso8ukk91g.us-east-1.rds.amazonaws.com --port=5432 --username=csye6225 --dbname=csye6225
 
 ````
+
+Command to import Certificates
+````bash
+aws acm import-certificate \
+  --certificate fileb://../SSL/demo_saralacsye6225.me/demo_saralacsye6225_me.crt \
+  --private-key fileb://../SSL/privatekey.pem \
+  --certificate-chain fileb://../SSL/demo_saralacsye6225.me/demo_saralacsye6225_me.ca-bundle \
+  --region us-east-1 \
+  --profile demo
+  ````

@@ -68,15 +68,6 @@ resource "aws_security_group" "load_balancer_sg" {
   vpc_id      = aws_vpc.main_vpc.id
 
   ingress {
-    from_port        = 80 # For HTTP
-    to_port          = 80
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
-    description      = "Allow HTTP traffic from the internet"
-  }
-
-  ingress {
     from_port        = 443 # For HTTPS
     to_port          = 443
     protocol         = "tcp"

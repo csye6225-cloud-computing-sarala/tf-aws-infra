@@ -100,7 +100,8 @@ resource "aws_iam_policy" "ec2_kms_policy" {
           "kms:GenerateDataKey",
           "kms:DescribeKey"
         ],
-        Resource : aws_kms_key.ec2_kms_key.arn
+        Resource : ["${aws_kms_key.secrets_kms_key.arn}",
+        "${aws_kms_key.s3_kms_key.arn}"]
       }
     ]
   })
@@ -230,10 +231,11 @@ resource "aws_iam_role_policy_attachment" "sns_publish_policy_attachment" {
 
 # KMS Key for EC2
 resource "aws_kms_key" "ec2_kms_key" {
-  description         = "KMS key for EC2"
-  key_usage           = "ENCRYPT_DECRYPT"
-  is_enabled          = true
-  enable_key_rotation = true
+  description             = "KMS key for EC2"
+  key_usage               = "ENCRYPT_DECRYPT"
+  is_enabled              = true
+  enable_key_rotation     = true
+  rotation_period_in_days = 90
 }
 
 # Policy for Secrets Manager and KMS access
@@ -266,10 +268,11 @@ resource "aws_iam_role_policy_attachment" "ec2_secrets_policy_attachment" {
 
 # KMS Key for RDS
 resource "aws_kms_key" "rds_kms_key" {
-  description         = "KMS key for RDS"
-  key_usage           = "ENCRYPT_DECRYPT"
-  is_enabled          = true
-  enable_key_rotation = true
+  description             = "KMS key for RDS"
+  key_usage               = "ENCRYPT_DECRYPT"
+  is_enabled              = true
+  enable_key_rotation     = true
+  rotation_period_in_days = 90
   tags = {
     Purpose = "Encrypt RDS databases"
   }
@@ -308,10 +311,11 @@ resource "aws_kms_key_policy" "rds_kms_policy" {
 
 # IAM Policy for Secrets Manager KMS Key
 resource "aws_kms_key" "secrets_kms_key" {
-  description         = "KMS key for Secrets Manager"
-  key_usage           = "ENCRYPT_DECRYPT"
-  is_enabled          = true
-  enable_key_rotation = true
+  description             = "KMS key for Secrets Manager"
+  key_usage               = "ENCRYPT_DECRYPT"
+  is_enabled              = true
+  enable_key_rotation     = true
+  rotation_period_in_days = 90
   tags = {
     Purpose = "Encrypt Secrets Manager secrets"
   }
@@ -333,15 +337,15 @@ resource "aws_kms_key_policy" "secrets_kms_policy" {
         Resource : "*"
       },
       {
-        Sid : "AllowSecretsManagerAccess",
+        Sid : "AllowEC2RoleAccess",
         Effect : "Allow",
         Principal : {
-          Service : "secretsmanager.amazonaws.com"
+          AWS : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ec2_role_v3"
         },
         Action : [
           "kms:Encrypt",
           "kms:Decrypt",
-          "kms:GenerateDataKey*",
+          "kms:GenerateDataKey",
           "kms:DescribeKey"
         ],
         Resource : "*"
@@ -352,10 +356,11 @@ resource "aws_kms_key_policy" "secrets_kms_policy" {
 
 # IAM Policy for S3 KMS Key
 resource "aws_kms_key" "s3_kms_key" {
-  description         = "KMS key for S3"
-  key_usage           = "ENCRYPT_DECRYPT"
-  is_enabled          = true
-  enable_key_rotation = true
+  description             = "KMS key for S3"
+  key_usage               = "ENCRYPT_DECRYPT"
+  is_enabled              = true
+  enable_key_rotation     = true
+  rotation_period_in_days = 90
   tags = {
     Purpose = "Encrypt S3 buckets"
   }
